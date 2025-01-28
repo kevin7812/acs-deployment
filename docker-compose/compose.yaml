@@ -18,6 +18,9 @@ services:
     image: quay.io/alfresco/alfresco-content-repository:23.4.0
     mem_limit: 1900m
     environment:
+      CATALINA_OPTS: "
+                      -agentlib:jdwp=transport=dt_socket,address=*:8000,server=y,suspend=n
+                      "
       JAVA_TOOL_OPTIONS: >-
         -Dencryption.keystore.type=JCEKS
         -Dencryption.cipherAlgorithm=DESede/CBC/PKCS5Padding
@@ -49,6 +52,14 @@ services:
         -Dsfs.url=http://shared-file-store:8099/
         -DlocalTransform.core-aio.url=http://transform-core-aio:8090/
         -Ddsync.service.uris=http://localhost:9090/alfresco
+        -Dauthentication.chain=identity-service1:identity-service,alfrescoNtlm1:alfrescoNtlm
+        -Didentity-service.auth-server-url=https://dev-ps-alfresco.auth0.com/
+        -Didentity-service.audience=http://localhost:3000
+        -Didentity-service.resource={clientId}
+        -Didentity-service.credentials.secret={clientSecret}
+        -Didentity-service.public-client=false
+        -Didentity-service.principal-attribute=nickname
+        -Didentity-service.realm=
         -XX:MinRAMPercentage=50
         -XX:MaxRAMPercentage=80
     healthcheck:
@@ -67,6 +78,8 @@ services:
       - "traefik.http.routers.alfrescomicrometer.rule=PathRegexp(`^/alfresco/(wc)?s(ervice)?/prometheus`)"
       - "traefik.http.middlewares.prometheusipfilter.ipallowlist.sourcerange=127.0.0.0/8"
       - "traefik.http.routers.alfrescomicrometer.middlewares=prometheusipfilter@docker"
+    ports:
+      - "8000:8000"
   transform-router:
     mem_limit: 512m
     image: quay.io/alfresco/alfresco-transform-router:4.1.5
